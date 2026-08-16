@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en" id="htmlRoot" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>OsteoVision AI | Orthopedic Diagnostic Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
+  <style>
+    .hologram-perspective { perspective: 1200px; }
+    .hologram-glass-card {
+      position: absolute;
+      inset: 0;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.05));
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 0 8px 32px 0 rgba(56, 189, 248, 0.15), inset 0 0 15px rgba(255, 255, 255, 0.2);
+      border-radius: 1.25rem;
+      transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
+    }
+    .dark .hologram-glass-card {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.45), rgba(30, 41, 59, 0.2));
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(56, 189, 248, 0.1);
+    }
+    @keyframes holoRevolveA {
+      0%, 45% { opacity: 1; transform: rotateY(0deg) scale(1) translateZ(30px); z-index: 10; }
+      50%, 95% { opacity: 0.2; transform: rotateY(180deg) scale(0.85) translateZ(-30px); z-index: 1; }
+      100% { opacity: 1; transform: rotateY(360deg) scale(1) translateZ(30px); z-index: 10; }
+    }
+    @keyframes holoRevolveB {
+      0%, 45% { opacity: 0.2; transform: rotateY(180deg) scale(0.85) translateZ(-30px); z-index: 1; }
+      50%, 95% { opacity: 1; transform: rotateY(360deg) scale(1) translateZ(30px); z-index: 10; }
+      100% { opacity: 0.2; transform: rotateY(540deg) scale(0.85) translateZ(-30px); z-index: 1; }
+    }
+    .holo-layer-1 { animation: holoRevolveA 10s infinite ease-in-out; }
+    .holo-layer-2 { animation: holoRevolveB 10s infinite ease-in-out; }
+  </style>
+</head>
+<body id="bodyRoot" class="bg-slate-100 text-slate-800 min-h-screen font-sans transition-colors duration-300 flex flex-col justify-between relative overflow-x-hidden">
+
+  <!-- Responsive Navigation -->
+  <nav id="navBar" class="border-b border-slate-300 bg-white/95 dark:bg-slate-900/95 backdrop-blur sticky top-0 z-50 transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center space-x-2.5 cursor-pointer select-none" onclick="showSection('home')">
+        <div class="w-9 h-9 rounded-lg bg-sky-500 flex items-center justify-center font-black text-slate-950 text-sm shadow-sm flex-shrink-0">OV</div>
+        <div>
+          <span class="font-bold text-base sm:text-lg tracking-wide text-sky-600 dark:text-sky-400 block leading-tight">OsteoVision AI</span>
+          <span class="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 italic block leading-tight mt-0.5">
+            (this is a pilot project fairly used under guidelines and testing purpose)
+          </span>
+        </div>
+      </div>
+
+      <!-- Desktop Links & Theme Switcher -->
+      <div class="hidden md:flex items-center space-x-6">
+        <button onclick="showSection('home')" id="nav-home" class="text-sm font-semibold text-sky-600 dark:text-sky-400 border-b-2 border-sky-500 pb-1">Home</button>
+        <button onclick="showSection('diagnostic')" id="nav-diagnostic" class="text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-300">Diagnostic Studio</button>
+        <button onclick="showSection('products')" id="nav-products" class="text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-300">Products & Pricing</button>
+        <button onclick="showSection('about')" id="nav-about" class="text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-300">About</button>
+
+        <div class="flex items-center space-x-2 pl-3 border-l border-slate-300 dark:border-slate-700">
+          <span class="text-xs">☀️</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="themeToggle" class="sr-only peer" onchange="toggleTheme()">
+            <div class="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-500"></div>
+          </label>
+          <span class="text-xs">🌙</span>
+        </div>
+      </div>
+
+      <!-- Mobile Hamburger Button -->
+      <div class="flex items-center space-x-2 md:hidden">
+        <label class="relative inline-flex items-center cursor-pointer mr-1">
+          <input type="checkbox" id="mobileThemeToggle" class="sr-only peer" onchange="toggleTheme(true)">
+          <div class="w-9 h-5 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-sky-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+        </label>
+        <button onclick="toggleMobileMenu()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+          ☰
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Mobile Dropdown Menu -->
+    <div id="mobileMenu" class="hidden md:hidden px-4 pt-2 pb-4 space-y-2 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+      <button onclick="showSection('home'); toggleMobileMenu();" class="block w-full text-left py-2 text-sm font-semibold text-sky-600 dark:text-sky-400">Home</button>
+      <button onclick="showSection('diagnostic'); toggleMobileMenu();" class="block w-full text-left py-2 text-sm font-semibold text-slate-600 dark:text-slate-300">Diagnostic Studio</button>
+      <button onclick="showSection('products'); toggleMobileMenu();" class="block w-full text-left py-2 text-sm font-semibold text-slate-600 dark:text-slate-300">Products & Pricing</button>
+      <button onclick="showSection('about'); toggleMobileMenu();" class="block w-full text-left py-2 text-sm font-semibold text-slate-600 dark:text-slate-300">About</button>
+    </div>
+  </nav>
+
+  <!-- FLOATING LEO (BEAGLE) CHAT TRIGGER - MOBILE COMPLIANT -->
+  <div class="fixed left-3 sm:left-6 bottom-4 sm:bottom-8 z-50 flex items-center">
+    <button onclick="toggleLeoChat()" class="flex items-center space-x-2 sm:space-x-3 bg-amber-500 hover:bg-amber-400 text-slate-950 px-3 sm:px-4 py-2.5 sm:py-3 rounded-full shadow-2xl shadow-amber-500/30 transition-all hover:scale-105 border-2 border-amber-300">
+      <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center text-sm sm:text-base shadow-inner">🐶</div>
+      <div class="text-left pr-1">
+        <span class="block text-[11px] sm:text-xs font-black uppercase tracking-wider leading-tight">Leo AI</span>
+        <span class="block text-[9px] sm:text-[10px] font-semibold text-slate-800 leading-tight">Bone Health</span>
+      </div>
+    </button>
+  </div>
+
+  <!-- LEO CHAT MODAL -->
+  <div id="leoChatModal" class="hidden fixed left-3 sm:left-6 bottom-16 sm:bottom-24 z-50 w-[92vw] sm:w-96 max-w-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+    <div class="bg-gradient-to-r from-amber-500 to-amber-600 p-3.5 text-slate-950 flex items-center justify-between">
+      <div class="flex items-center space-x-2.5">
+        <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-lg shadow-md">��</div>
+        <div>
+          <h3 class="font-extrabold text-xs sm:text-sm leading-tight">Leo (Bone Health Guide)</h3>
+          <p class="text-[10px] font-medium text-slate-800">OsteoVision AI Companion</p>
+        </div>
+      </div>
+      <button onclick="toggleLeoChat()" class="w-6 h-6 rounded-full bg-black/10 flex items-center justify-center font-bold text-xs">✕</button>
+    </div>
+
+    <div class="p-4 space-y-3 max-h-[340px] overflow-y-auto bg-slate-50 dark:bg-slate-900/90 text-xs">
+      <div class="flex items-start space-x-2">
+        <span class="text-sm mt-0.5">🐶</span>
+        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2.5 rounded-2xl rounded-tl-none text-slate-700 dark:text-slate-200 leading-relaxed shadow-sm">
+          Woof! Click any topic below to learn about your skeletal health:
+        </div>
+      </div>
+
+      <div class="space-y-2 pt-1">
+        <a href="https://mjnaiduhospitals.com/best-indian-bone-strengthening-foods-for-strong-bones/" target="_blank" rel="noopener noreferrer" class="block bg-white dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-amber-500/50">
+          <div class="flex justify-between font-bold text-amber-600 dark:text-amber-400">
+            <span>1. Best Food for Bone Health</span><span>↗</span>
+          </div>
+          <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Calcium & Vitamin D-rich nutrition.</p>
+        </a>
+
+        <a href="https://www.bagan.com.my/why-bone-density-matters/" target="_blank" rel="noopener noreferrer" class="block bg-white dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-amber-500/50">
+          <div class="flex justify-between font-bold text-amber-600 dark:text-amber-400">
+            <span>2. Why Bone Density Matters</span><span>↗</span>
+          </div>
+          <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Osteoporosis risks & prevention.</p>
+        </a>
+
+        <a href="https://www.vegansociety.com/resources/nutrition-and-health/bone-health" target="_blank" rel="noopener noreferrer" class="block bg-white dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-amber-500/50">
+          <div class="flex justify-between font-bold text-amber-600 dark:text-amber-400">
+            <span>3. Best Vegan Diet for Bones</span><span>↗</span>
+          </div>
+          <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Plant-based mineral bioavailability.</p>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <main class="max-w-7xl mx-auto p-4 sm:p-6 md:p-10 w-full space-y-10">
+
+    <!-- 1. HOME SECTION -->
+    <section id="section-home" class="space-y-8">
+      
+      <div class="border-b border-slate-300 dark:border-slate-800 pb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-sky-600 dark:text-sky-400">Comparative Bone Radiograph Platform</h1>
+          <p class="text-slate-600 dark:text-slate-400 text-xs sm:text-sm mt-1">Multi-Angle Baseline Alignment • Structural Contour Tracing • Discontinuity Localization</p>
+        </div>
+        <button onclick="showSection('diagnostic')" class="w-full md:w-auto inline-flex justify-center items-center space-x-2 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl transition shadow-md text-sm">
+          <span>Open Diagnostic Studio</span>
+          <span>→</span>
+        </button>
+      </div>
+
+      <!-- FULL-ASPECT SLIDER CAROUSEL -->
+      <div class="relative w-full overflow-hidden rounded-xl sm:rounded-2xl border border-slate-300 dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900 group" id="carouselContainer">
+        <div id="carouselTrack" class="flex transition-transform duration-700 ease-in-out w-full items-center">
+          <div class="w-full flex-shrink-0 flex items-center justify-center bg-slate-950">
+            <img src="/static/banners/slide1.png" alt="Slide 1" class="w-full h-auto object-contain block select-none" />
+          </div>
+          <div class="w-full flex-shrink-0 flex items-center justify-center bg-slate-950">
+            <img src="/static/banners/slide2.png" alt="Slide 2" class="w-full h-auto object-contain block select-none" />
+          </div>
+          <div class="w-full flex-shrink-0 flex items-center justify-center bg-slate-950">
+            <img src="/static/banners/slide3.png" alt="Slide 3" class="w-full h-auto object-contain block select-none" />
+          </div>
+        </div>
+
+        <div class="absolute bottom-2 sm:bottom-3 left-1/2 -translate-x-1/2 flex space-x-2 bg-slate-950/70 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 z-10">
+          <button onclick="setSlide(0)" class="indicator w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-sky-400 transition-all"></button>
+          <button onclick="setSlide(1)" class="indicator w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-white/40 transition-all"></button>
+          <button onclick="setSlide(2)" class="indicator w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-white/40 transition-all"></button>
+        </div>
+      </div>
+
+      <!-- UPCOMING TARGETS & ROADMAP -->
+      <div class="space-y-4 sm:space-y-6 pt-4 border-t border-slate-300 dark:border-slate-800/80">
+        <div class="text-center max-w-2xl mx-auto space-y-1.5">
+          <div class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+            <span>🚀</span>
+            <span>Upcoming Targets & Roadmap</span>
+          </div>
+          <h2 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+            Our Next Ambitions On The Way
+          </h2>
+          <p class="text-[11px] sm:text-xs md:text-sm text-slate-500 dark:text-slate-400">
+            Expanding diagnostic precision and clinical-grade infrastructure for next-generation workflows.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 pt-2">
+          <div class="bg-[#f05a22] text-white p-6 sm:p-8 rounded-2xl flex flex-col justify-center items-center text-center shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+            <h3 class="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight uppercase leading-none">ONLY PROVIDER</h3>
+            <p class="text-xs sm:text-sm font-bold uppercase tracking-wider mt-2">WITH MULTI-PROJECTION MORPHOMETRIC INTELLIGENCE</p>
+            <div class="w-16 h-0.5 bg-white/70 my-3"></div>
+            <p class="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-white/90">DETERMINISTIC FRACTURE GAP PENETRATION</p>
+          </div>
+
+          <div class="bg-[#f9a01b] text-white p-6 sm:p-8 rounded-2xl flex flex-col justify-center items-center text-center shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+            <h3 class="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight uppercase leading-none">HIGH-PRECISION</h3>
+            <p class="text-xs sm:text-sm font-bold uppercase tracking-wider mt-2">ORTHOPEDIC DIAGNOSTIC SOLUTIONS</p>
+            <div class="w-16 h-0.5 bg-white/70 my-3"></div>
+            <p class="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-white/90">ENGINEERED FOR RADIOLOGY WORKSTATIONS</p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 2. DIAGNOSTIC STUDIO SECTION -->
+    <section id="section-diagnostic" class="hidden space-y-6 sm:space-y-8">
+      <div class="border-b border-slate-300 dark:border-slate-800 pb-3">
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-sky-600 dark:text-sky-400">Diagnostic Studio</h1>
+        <p class="text-slate-600 dark:text-slate-400 text-xs sm:text-sm mt-0.5">Upload baseline reference angles and patient target scan.</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Section A: 6 Reference Scans -->
+        <div id="cardRef" class="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4 shadow-sm">
+          <div class="flex items-center space-x-2">
+            <span class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">A</span>
+            <h2 class="font-semibold text-emerald-600 dark:text-emerald-400 text-sm sm:text-base">Normal References (Up to 6 Angles)</h2>
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div>
+              <label class="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">Angle 1 (AP View)</label>
+              <input type="file" id="ref1" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-slate-200 dark:file:bg-slate-800 file:text-slate-800 dark:file:text-slate-200"/>
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">Angle 2 (Lateral View)</label>
+              <input type="file" id="ref2" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-slate-200 dark:file:bg-slate-800 file:text-slate-800 dark:file:text-slate-200"/>
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">Angle 3 (Oblique View)</label>
+              <input type="file" id="ref3" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-slate-200 dark:file:bg-slate-800 file:text-slate-800 dark:file:text-slate-200"/>
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">Angle 4 (Axial View)</label>
+              <input type="file" id="ref4" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-slate-200 dark:file:bg-slate-800 file:text-slate-800 dark:file:text-slate-200"/>
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">Angle 5 (Specialized 1)</label>
+              <input type="file" id="ref5" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-slate-200 dark:file:bg-slate-800 file:text-slate-800 dark:file:text-slate-200"/>
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">Angle 6 (Specialized 2)</label>
+              <input type="file" id="ref6" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-slate-200 dark:file:bg-slate-800 file:text-slate-800 dark:file:text-slate-200"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section B: Target Scan -->
+        <div id="cardTarget" class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-2xl p-4 sm:p-6 flex flex-col justify-between space-y-4 shadow-sm">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="w-6 h-6 rounded-full bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold text-xs">B</span>
+              <h2 class="font-semibold text-sky-600 dark:text-sky-400 text-sm sm:text-base">Target Patient Scan</h2>
+            </div>
+            <div class="mt-3">
+              <input type="file" id="targetScan" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-2.5 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-sky-600 file:text-white cursor-pointer"/>
+            </div>
+          </div>
+
+          <button onclick="runAnalysis()" class="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-2.5 sm:py-3 rounded-xl transition shadow-md text-xs sm:text-sm">
+            Run Comparative Diagnosis
+          </button>
+        </div>
+
+      </div>
+
+      <div id="loading" class="hidden text-center py-4 text-sky-600 dark:text-sky-400 font-semibold animate-pulse text-xs sm:text-sm">
+        Processing morphometry & correlation...
+      </div>
+
+      <!-- Results Grid -->
+      <div id="resultsCard" class="hidden space-y-4 sm:space-y-6">
+        <div id="cardResultHeader" class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 p-3.5 rounded-2xl flex items-center justify-between shadow-sm">
+          <span class="font-medium text-xs sm:text-sm">Assessment Result:</span>
+          <span id="diagnosticBadge" class="px-3 py-1 rounded-full font-bold text-[10px] sm:text-xs"></span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 p-3 rounded-2xl space-y-1.5">
+            <p class="text-[10px] font-semibold text-slate-500 uppercase">1. Patient Target Image</p>
+            <img id="imgOriginal" class="w-full rounded-xl border border-slate-300 dark:border-slate-800 bg-black aspect-square object-contain" />
+          </div>
+          <div class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 p-3 rounded-2xl space-y-1.5">
+            <p class="text-[10px] font-semibold text-red-500 uppercase">2. Structural Bone Outline</p>
+            <img id="imgContour" class="w-full rounded-xl border border-slate-300 dark:border-slate-800 bg-black aspect-square object-contain" />
+          </div>
+          <div class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 p-3 rounded-2xl space-y-1.5">
+            <p class="text-[10px] font-semibold text-sky-600 uppercase">3. Discontinuity Heatmap</p>
+            <img id="imgDiagnostic" class="w-full rounded-xl border border-slate-300 dark:border-slate-800 bg-black aspect-square object-contain" />
+          </div>
+        </div>
+
+        <!-- Download Toolbar -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">
+          <div class="text-center sm:text-left">
+            <h3 class="font-bold text-slate-800 dark:text-slate-200 text-xs sm:text-sm">Download Clinical Report</h3>
+            <p class="text-[10px] text-slate-500">Export high-resolution overlays or PDF reports.</p>
+          </div>
+
+          <div class="flex items-center space-x-2 w-full sm:w-auto">
+            <select id="downloadFormat" class="flex-1 sm:flex-initial bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-[11px] font-semibold rounded-xl px-3 py-2">
+              <option value="pdf">PDF Clinical Report (.pdf)</option>
+              <option value="png">Diagnostic Overlay (.png)</option>
+              <option value="jpg">Diagnostic Overlay (.jpg)</option>
+            </select>
+
+            <button onclick="downloadDiagnosticResult()" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-[11px] whitespace-nowrap">
+              Download ↓
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. PRODUCTS SECTION -->
+    <section id="section-products" class="hidden space-y-6">
+      <div class="text-center max-w-2xl mx-auto">
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-sky-600 dark:text-sky-400">Diagnostic Tier Plans</h2>
+        <p class="text-slate-600 dark:text-slate-400 text-xs sm:text-sm mt-1">Infrastructure for clinics and hospitals.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+        <div class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-2xl p-5 space-y-4">
+          <div>
+            <span class="text-[10px] font-bold text-slate-500 uppercase">Starter</span>
+            <h3 class="text-lg font-bold">Free Model</h3>
+            <div class="mt-2 text-xl font-black">$0 <span class="text-xs font-normal">/ mo</span></div>
+            <ul class="mt-4 space-y-2 text-xs text-slate-600 dark:text-slate-300">
+              <li>✓ 15 Scans daily</li>
+              <li>✓ Basic Contour Tracing</li>
+              <li>✓ Web-based JPEG export</li>
+            </ul>
+          </div>
+          <button class="w-full py-2 rounded-xl border border-slate-300 dark:border-slate-700 font-bold text-xs">Active Plan</button>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 border-2 border-sky-500 rounded-2xl p-5 space-y-4 shadow-lg">
+          <div>
+            <span class="text-[10px] font-bold text-sky-600 uppercase">Pro</span>
+            <h3 class="text-lg font-bold">Paid Service 2</h3>
+            <div class="mt-2 text-xl font-black text-sky-600">$49 <span class="text-xs font-normal">/ mo</span></div>
+            <ul class="mt-4 space-y-2 text-xs text-slate-700 dark:text-slate-200">
+              <li>✓ Unlimited Scans</li>
+              <li>✓ 6 Multi-Angle Projections</li>
+              <li>✓ Automated PDF Diagnostic Reports</li>
+            </ul>
+          </div>
+          <button onclick="subscribePlan('Paid Service 2')" class="w-full py-2 rounded-xl bg-sky-500 text-slate-950 font-bold text-xs">Subscribe</button>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 border border-purple-600 rounded-2xl p-5 space-y-4">
+          <div>
+            <span class="text-[10px] font-bold text-purple-600 uppercase">Enterprise</span>
+            <h3 class="text-lg font-bold">Paid Service Plus</h3>
+            <div class="mt-2 text-xl font-black text-purple-600">$199 <span class="text-xs font-normal">/ mo</span></div>
+            <ul class="mt-4 space-y-2 text-xs text-slate-600 dark:text-slate-300">
+              <li>✓ Full PACS / DICOM Direct Sync</li>
+              <li>✓ Multi-Doctor Concurrency</li>
+              <li>✓ 24/7 Dedicated Support</li>
+            </ul>
+          </div>
+          <button onclick="subscribePlan('Paid Service Plus')" class="w-full py-2 rounded-xl bg-purple-600 text-white font-bold text-xs">Subscribe</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. ABOUT SECTION -->
+    <section id="section-about" class="hidden space-y-6 sm:space-y-8 max-w-4xl mx-auto">
+      <div class="border-b border-slate-300 dark:border-slate-800 pb-3">
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-sky-600 dark:text-sky-400">About OsteoVision AI</h2>
+        <p class="text-slate-600 dark:text-slate-400 text-xs sm:text-sm mt-0.5">Orthopedic Computer Vision & Morphometry</p>
+      </div>
+
+      <!-- Hologram Carousel -->
+      <div class="relative w-full h-56 sm:h-72 hologram-perspective flex items-center justify-center overflow-visible">
+        <div class="relative w-full max-w-xl h-full flex items-center justify-center">
+          <div class="hologram-glass-card holo-layer-1 p-2 flex items-center justify-center">
+            <img src="/static/banners/slide4.png" class="w-full h-full object-contain rounded-xl select-none" onerror="this.src='/static/banners/slide1.png'"/>
+          </div>
+          <div class="hologram-glass-card holo-layer-2 p-2 flex items-center justify-center">
+            <img src="/static/banners/slide5.png" class="w-full h-full object-contain rounded-xl select-none" onerror="this.src='/static/banners/slide2.png'"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-2xl p-5 sm:p-8 space-y-4 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed shadow-sm">
+        <p><strong>OsteoVision AI</strong> introduces a multi-angle baseline registration framework. By cross-referencing patient scans against up to six canonical projections and tracking mathematical boundary discontinuities across bone geometry, the system provides explainable, deterministic visual overlays that penetrate fracture gaps directly.</p>
+
+        <div class="bg-slate-50 dark:bg-slate-800/80 border border-sky-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div class="text-center sm:text-left">
+            <h3 class="font-bold text-slate-800 dark:text-slate-100 text-xs sm:text-sm">Ready to test radiograph analysis?</h3>
+          </div>
+          <button onclick="showSection('diagnostic')" class="w-full sm:w-auto bg-sky-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs">
+            Launch Diagnostic Studio ⚡
+          </button>
+        </div>
+
+        <div class="border-t border-slate-200 dark:border-slate-800 pt-4 flex items-center justify-between">
+          <div>
+            <p class="text-[10px] text-slate-500">Platform Creator</p>
+            <p class="text-sm sm:text-base font-bold text-sky-600 dark:text-sky-400">Siddhant Raj Mishra</p>
+          </div>
+          <span class="px-2.5 py-0.5 bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 text-[10px] font-semibold rounded-full">v2.0 Architecture</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="border-t border-slate-300 dark:border-slate-800/80 py-4 text-center text-[10px] sm:text-xs text-slate-500">
+    OsteoVision AI • Created by Siddhant Raj Mishra
+  </footer>
+
+  <script>
+    let currentAnalysisResult = null;
+
+    function toggleMobileMenu() {
+      document.getElementById('mobileMenu').classList.toggle('hidden');
+    }
+
+    function toggleLeoChat() {
+      document.getElementById('leoChatModal').classList.toggle('hidden');
+    }
+
+    function showSection(sectionId) {
+      ['home', 'diagnostic', 'products', 'about'].forEach(sec => {
+        document.getElementById(`section-${sec}`).classList.add('hidden');
+        const btn = document.getElementById(`nav-${sec}`);
+        if (btn) btn.className = "text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-300";
+      });
+      
+      document.getElementById(`section-${sectionId}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`nav-${sectionId}`);
+      if (activeBtn) activeBtn.className = "text-sm font-semibold text-sky-600 dark:text-sky-400 border-b-2 border-sky-500 pb-1";
+      
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    let currentSlide = 0;
+    const totalSlides = 3;
+    let autoSlideTimer = null;
+
+    function updateCarousel() {
+      const track = document.getElementById('carouselTrack');
+      if (!track) return;
+      track.style.transform = `translateX(-${currentSlide * 100}%)`;
+      const dots = document.querySelectorAll('.indicator');
+      dots.forEach((dot, idx) => {
+        dot.className = idx === currentSlide ? "indicator w-2.5 h-2.5 rounded-full bg-sky-400 scale-125 transition-all" : "indicator w-2.5 h-2.5 rounded-full bg-white/40 transition-all";
+      });
+    }
+
+    function setSlide(index) {
+      currentSlide = index;
+      updateCarousel();
+      clearInterval(autoSlideTimer);
+      startAutoSlide();
+    }
+
+    function startAutoSlide() {
+      autoSlideTimer = setInterval(() => {
+        currentSlide = (currentSlide + 1) % totalSlides;
+        updateCarousel();
+      }, 4000);
+    }
+    startAutoSlide();
+
+    function toggleTheme(fromMobile = false) {
+      const isDark = fromMobile ? document.getElementById('mobileThemeToggle').checked : document.getElementById('themeToggle').checked;
+      document.getElementById('themeToggle').checked = isDark;
+      document.getElementById('mobileThemeToggle').checked = isDark;
+
+      const html = document.getElementById('htmlRoot');
+      const body = document.getElementById('bodyRoot');
+      const nav = document.getElementById('navBar');
+
+      if (isDark) {
+        html.className = "dark";
+        body.className = "bg-slate-950 text-slate-100 min-h-screen font-sans transition-colors duration-300 flex flex-col justify-between relative overflow-x-hidden";
+        nav.className = "border-b border-slate-800 bg-slate-900/95 backdrop-blur sticky top-0 z-50 transition-colors";
+      } else {
+        html.className = "light";
+        body.className = "bg-slate-100 text-slate-800 min-h-screen font-sans transition-colors duration-300 flex flex-col justify-between relative overflow-x-hidden";
+        nav.className = "border-b border-slate-300 bg-white/95 backdrop-blur sticky top-0 z-50 transition-colors";
+      }
+    }
+
+    function subscribePlan(planTitle) {
+      alert(`Subscription Checkout:\n\nSelected: ${planTitle}\nRedirecting to secure gateway...`);
+    }
+
+    async function runAnalysis() {
+      const targetFile = document.getElementById('targetScan').files[0];
+      if (!targetFile) {
+        alert('Please upload a patient target X-ray scan.');
+        return;
+      }
+
+      const refInputs = ['ref1', 'ref2', 'ref3', 'ref4', 'ref5', 'ref6'];
+      const formData = new FormData();
+      formData.append('target_scan', targetFile);
+
+      let refCount = 0;
+      refInputs.forEach(id => {
+        const file = document.getElementById(id).files[0];
+        if (file) {
+          formData.append('reference_angles', file);
+          refCount++;
+        }
+      });
+
+      if (refCount < 2) {
+        alert('Please select at least 2 reference angle scans.');
+        return;
+      }
+
+      document.getElementById('loading').classList.remove('hidden');
+      document.getElementById('resultsCard').classList.add('hidden');
+
+      try {
+        const response = await fetch('/api/v1/analyze-comparative', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+        document.getElementById('loading').classList.add('hidden');
+
+        if (!response.ok) {
+          alert('Error: ' + (data.detail || 'Analysis failed.'));
+          return;
+        }
+
+        currentAnalysisResult = data;
+        document.getElementById('resultsCard').classList.remove('hidden');
+        document.getElementById('imgOriginal').src = data.original_target_url;
+        document.getElementById('imgContour').src = data.target_contour_url;
+        document.getElementById('imgDiagnostic').src = data.diagnostic_comparison_url;
+
+        const badge = document.getElementById('diagnosticBadge');
+        if (data.has_fracture_detected) {
+          badge.className = "px-3 py-1 rounded-full font-bold text-[10px] sm:text-xs bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30";
+          badge.innerText = "Discontinuity / Fracture Detected";
+        } else {
+          badge.className = "px-3 py-1 rounded-full font-bold text-[10px] sm:text-xs bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30";
+          badge.innerText = "Normal Structural Alignment";
+        }
+      } catch (err) {
+        document.getElementById('loading').classList.add('hidden');
+        alert('Network Error: ' + err.message);
+      }
+    }
+
+    function getBase64ImageFromUrl(imageUrl) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = imageUrl;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.naturalWidth || img.width;
+          canvas.height = img.naturalHeight || img.height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL("image/jpeg"));
+        };
+        img.onerror = () => reject(new Error("Failed to encode image."));
+      });
+    }
+
+    async function downloadDiagnosticResult() {
+      if (!currentAnalysisResult) {
+        alert("No active diagnostic scan found.");
+        return;
+      }
+
+      const format = document.getElementById('downloadFormat').value;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+
+      if (format === 'pdf') {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+
+        doc.setFillColor(15, 23, 42);
+        doc.rect(0, 0, 210, 35, 'F');
+        doc.setTextColor(56, 189, 248);
+        doc.setFontSize(18);
+        doc.setFont("helvetica", "bold");
+        doc.text("OsteoVision AI - Orthopedic Diagnostic Report", 14, 18);
+
+        doc.setFontSize(9);
+        doc.setTextColor(148, 163, 184);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Generated: ${new Date().toLocaleString()} | Verified Multi-Angle Morphometry`, 14, 26);
+
+        const isFracture = currentAnalysisResult.has_fracture_detected;
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        if (isFracture) {
+          doc.setFillColor(254, 242, 242);
+          doc.setDrawColor(239, 68, 68);
+          doc.rect(14, 42, 182, 14, 'FD');
+          doc.setTextColor(185, 28, 28);
+          doc.text("ASSESSMENT: STRUCTURAL DISCONTINUITY / FRACTURE DETECTED", 20, 51);
+        } else {
+          doc.setFillColor(240, 253, 244);
+          doc.setDrawColor(34, 197, 94);
+          doc.rect(14, 42, 182, 14, 'FD');
+          doc.setTextColor(21, 128, 61);
+          doc.text("ASSESSMENT: NORMAL STRUCTURAL ALIGNMENT VERIFIED", 20, 51);
+        }
+
+        try {
+          const imgOriginalData = await getBase64ImageFromUrl(currentAnalysisResult.original_target_url);
+          const imgContourData = await getBase64ImageFromUrl(currentAnalysisResult.target_contour_url);
+          const imgDiagData = await getBase64ImageFromUrl(currentAnalysisResult.diagnostic_comparison_url);
+
+          doc.setTextColor(30, 41, 59);
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.text("1. Original Patient Scan", 14, 66);
+          doc.addImage(imgOriginalData, 'JPEG', 14, 70, 85, 85);
+
+          doc.text("2. Structural Bone Outline", 111, 66);
+          doc.addImage(imgContourData, 'JPEG', 111, 70, 85, 85);
+
+          doc.text("3. Comparative Discontinuity Heatmap", 14, 168);
+          doc.addImage(imgDiagData, 'JPEG', 14, 172, 85, 85);
+
+          doc.save(`OsteoVision_Report_${timestamp}.pdf`);
+        } catch (err) {
+          alert("Error generating PDF: " + err.message);
+        }
+      } else {
+        const a = document.createElement('a');
+        a.href = currentAnalysisResult.diagnostic_comparison_url;
+        a.download = `OsteoVision_Result_${timestamp}.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    }
+  </script>
+</body>
+</html>
