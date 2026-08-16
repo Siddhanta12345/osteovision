@@ -38,7 +38,7 @@
     }
     @keyframes holoRevolveB {
       0%, 45% { opacity: 0.2; transform: rotateY(180deg) scale(0.85) translateZ(-30px); z-index: 1; }
-      50%, 95% { opacity: 1; transform: rotateY(360deg) scale(1) translateZ(30px); z-index: 10; }
+      50%, 95% { opacity: 0.2; transform: rotateY(360deg) scale(1) translateZ(30px); z-index: 10; }
       100% { opacity: 0.2; transform: rotateY(540deg) scale(0.85) translateZ(-30px); z-index: 1; }
     }
     .holo-layer-1 { animation: holoRevolveA 10s infinite ease-in-out; }
@@ -47,7 +47,7 @@
 </head>
 <body id="bodyRoot" class="bg-slate-100 text-slate-800 min-h-screen font-sans transition-colors duration-300 flex flex-col justify-between relative overflow-x-hidden">
 
-  <!-- Responsive Navigation -->
+  <!-- Navigation -->
   <nav id="navBar" class="border-b border-slate-300 bg-white/95 dark:bg-slate-900/95 backdrop-blur sticky top-0 z-50 transition-colors">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
       
@@ -260,7 +260,7 @@
             </div>
             <div>
               <label class="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">Angle 5 (Specialized 1)</label>
-              <input type="file" id="ref6" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-slate-200 dark:file:bg-slate-800 file:text-slate-800 dark:file:text-slate-200"/>
+              <input type="file" id="ref5" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-slate-200 dark:file:bg-slate-800 file:text-slate-800 dark:file:text-slate-200"/>
             </div>
             <div>
               <label class="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">Angle 6 (Specialized 2)</label>
@@ -280,7 +280,7 @@
             </div>
           </div>
 
-          <button onclick="runAnalysis()" class="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-2.5 sm:py-3 rounded-xl transition shadow-md text-xs sm:text-sm">
+          <button onclick="runAnalysis()" id="btnRunDiag" class="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-2.5 sm:py-3 rounded-xl transition shadow-md text-xs sm:text-sm">
             Run Comparative Diagnosis
           </button>
         </div>
@@ -288,7 +288,7 @@
       </div>
 
       <div id="loading" class="hidden text-center py-4 text-sky-600 dark:text-sky-400 font-semibold animate-pulse text-xs sm:text-sm">
-        Processing morphometry & correlation...
+        Processing morphometry & correlation on Render API...
       </div>
 
       <div id="resultsCard" class="hidden space-y-4 sm:space-y-6">
@@ -432,7 +432,7 @@
   </footer>
 
   <script>
-    const API_BASE_URL = "https://osteovision-api.onrender.com";
+    const API_ENDPOINT = "https://osteovision-api.onrender.com/api/v1/analyze-comparative";
     let currentAnalysisResult = null;
 
     function toggleMobileMenu() {
@@ -511,53 +511,59 @@
     }
 
     async function runAnalysis() {
-      const targetFile = document.getElementById('targetScan').files[0];
+      const targetInput = document.getElementById('targetScan');
+      const targetFile = targetInput && targetInput.files ? targetInput.files[0] : null;
+
       if (!targetFile) {
-        alert('Please upload a patient target X-ray scan.');
+        alert('Please select a Target Patient Scan (Section B).');
         return;
       }
 
-      const refInputs = ['ref1', 'ref2', 'ref3', 'ref4', 'ref5', 'ref6'];
+      const refIds = ['ref1', 'ref2', 'ref3', 'ref4', 'ref5', 'ref6'];
       const formData = new FormData();
       formData.append('target_scan', targetFile);
 
       let refCount = 0;
-      refInputs.forEach(id => {
-        const file = document.getElementById(id).files[0];
-        if (file) {
-          formData.append('reference_angles', file);
+      refIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.files && el.files[0]) {
+          formData.append('reference_angles', el.files[0]);
           refCount++;
         }
       });
 
       if (refCount < 2) {
-        alert('Please select at least 2 reference angle scans.');
+        alert('Please upload at least 2 Normal Reference Angles (Section A).');
         return;
       }
 
-      document.getElementById('loading').classList.remove('hidden');
-      document.getElementById('resultsCard').classList.add('hidden');
+      const loading = document.getElementById('loading');
+      const resultsCard = document.getElementById('resultsCard');
+      const btnRun = document.getElementById('btnRunDiag');
+
+      loading.classList.remove('hidden');
+      resultsCard.classList.add('hidden');
+      btnRun.disabled = true;
+      btnRun.classList.add('opacity-50');
 
       try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/analyze-comparative`, {
+        const response = await fetch(API_ENDPOINT, {
           method: 'POST',
           body: formData
         });
 
         const data = await response.json();
-        document.getElementById('loading').classList.add('hidden');
+        loading.classList.add('hidden');
+        btnRun.disabled = false;
+        btnRun.classList.remove('opacity-50');
 
         if (!response.ok) {
-          alert('Error: ' + (data.detail || 'Analysis failed.'));
+          alert('Diagnostic Server Notice: ' + (data.detail || JSON.stringify(data)));
           return;
         }
 
-        data.original_target_url = data.original_target_url.startsWith('http') ? data.original_target_url : `${API_BASE_URL}${data.original_target_url}`;
-        data.target_contour_url = data.target_contour_url.startsWith('http') ? data.target_contour_url : `${API_BASE_URL}${data.target_contour_url}`;
-        data.diagnostic_comparison_url = data.diagnostic_comparison_url.startsWith('http') ? data.diagnostic_comparison_url : `${API_BASE_URL}${data.diagnostic_comparison_url}`;
-
         currentAnalysisResult = data;
-        document.getElementById('resultsCard').classList.remove('hidden');
+        resultsCard.classList.remove('hidden');
         document.getElementById('imgOriginal').src = data.original_target_url;
         document.getElementById('imgContour').src = data.target_contour_url;
         document.getElementById('imgDiagnostic').src = data.diagnostic_comparison_url;
@@ -570,9 +576,14 @@
           badge.className = "px-3 py-1 rounded-full font-bold text-[10px] sm:text-xs bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30";
           badge.innerText = "Normal Structural Alignment";
         }
+
+        resultsCard.scrollIntoView({ behavior: 'smooth' });
+
       } catch (err) {
-        document.getElementById('loading').classList.add('hidden');
-        alert('Network Error: ' + err.message);
+        loading.classList.add('hidden');
+        btnRun.disabled = false;
+        btnRun.classList.remove('opacity-50');
+        alert('Network Connection Error: ' + err.message + '\nPlease ensure Render service is online.');
       }
     }
 
