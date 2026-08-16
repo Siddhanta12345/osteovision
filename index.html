@@ -192,7 +192,7 @@
         </div>
       </div>
 
-      <!-- UPCOMING TARGETS & ROADMAP -->
+      <!-- ROADMAP -->
       <div class="space-y-4 sm:space-y-6 pt-4 border-t border-slate-300 dark:border-slate-800/80">
         <div class="text-center max-w-2xl mx-auto space-y-1.5">
           <div class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
@@ -243,27 +243,27 @@
           
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <div>
-              <label class="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">Angle 1 (AP View)</label>
+              <label class="block text-[11px] text-slate-600 dark:text-slate-400 mb-1 font-semibold">Angle 1 (AP View)</label>
               <input type="file" id="ref1" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-slate-200 dark:file:bg-slate-800 file:text-slate-800 dark:file:text-slate-200"/>
             </div>
             <div>
-              <label class="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">Angle 2 (Lateral View)</label>
+              <label class="block text-[11px] text-slate-600 dark:text-slate-400 mb-1 font-semibold">Angle 2 (Lateral View)</label>
               <input type="file" id="ref2" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-slate-200 dark:file:bg-slate-800 file:text-slate-800 dark:file:text-slate-200"/>
             </div>
             <div>
-              <label class="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">Angle 3 (Oblique View)</label>
+              <label class="block text-[11px] text-slate-600 dark:text-slate-400 mb-1 font-semibold">Angle 3 (Oblique View)</label>
               <input type="file" id="ref3" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-slate-200 dark:file:bg-slate-800 file:text-slate-800 dark:file:text-slate-200"/>
             </div>
             <div>
-              <label class="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">Angle 4 (Axial View)</label>
+              <label class="block text-[11px] text-slate-600 dark:text-slate-400 mb-1 font-semibold">Angle 4 (Axial View)</label>
               <input type="file" id="ref4" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-slate-200 dark:file:bg-slate-800 file:text-slate-800 dark:file:text-slate-200"/>
             </div>
             <div>
-              <label class="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">Angle 5 (Specialized 1)</label>
+              <label class="block text-[11px] text-slate-600 dark:text-slate-400 mb-1 font-semibold">Angle 5 (Specialized 1)</label>
               <input type="file" id="ref5" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-slate-200 dark:file:bg-slate-800 file:text-slate-800 dark:file:text-slate-200"/>
             </div>
             <div>
-              <label class="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">Angle 6 (Specialized 2)</label>
+              <label class="block text-[11px] text-slate-600 dark:text-slate-400 mb-1 font-semibold">Angle 6 (Specialized 2)</label>
               <input type="file" id="ref6" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-slate-200 dark:file:bg-slate-800 file:text-slate-800 dark:file:text-slate-200"/>
             </div>
           </div>
@@ -280,15 +280,15 @@
             </div>
           </div>
 
-          <button onclick="runAnalysis()" id="btnRunDiag" class="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-2.5 sm:py-3 rounded-xl transition shadow-md text-xs sm:text-sm">
+          <button type="button" onclick="runAnalysis()" id="btnRunDiag" class="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-2.5 sm:py-3 rounded-xl transition shadow-md text-xs sm:text-sm">
             Run Comparative Diagnosis
           </button>
         </div>
 
       </div>
 
-      <div id="loading" class="hidden text-center py-4 text-sky-600 dark:text-sky-400 font-semibold animate-pulse text-xs sm:text-sm">
-        Processing morphometry & correlation on Render API...
+      <div id="loading" class="hidden text-center py-6 text-sky-600 dark:text-sky-400 font-semibold animate-pulse text-xs sm:text-sm">
+        Processing morphometry & correlation on Render API (this may take up to 40s on first load)...
       </div>
 
       <div id="resultsCard" class="hidden space-y-4 sm:space-y-6">
@@ -587,23 +587,6 @@
       }
     }
 
-    function getBase64ImageFromUrl(imageUrl) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.src = imageUrl;
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          canvas.width = img.naturalWidth || img.width;
-          canvas.height = img.naturalHeight || img.height;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0);
-          resolve(canvas.toDataURL("image/jpeg"));
-        };
-        img.onerror = () => reject(new Error("Failed to encode image."));
-      });
-    }
-
     async function downloadDiagnosticResult() {
       if (!currentAnalysisResult) {
         alert("No active diagnostic scan found.");
@@ -647,21 +630,17 @@
         }
 
         try {
-          const imgOriginalData = await getBase64ImageFromUrl(currentAnalysisResult.original_target_url);
-          const imgContourData = await getBase64ImageFromUrl(currentAnalysisResult.target_contour_url);
-          const imgDiagData = await getBase64ImageFromUrl(currentAnalysisResult.diagnostic_comparison_url);
-
           doc.setTextColor(30, 41, 59);
           doc.setFontSize(10);
           doc.setFont("helvetica", "bold");
           doc.text("1. Original Patient Scan", 14, 66);
-          doc.addImage(imgOriginalData, 'JPEG', 14, 70, 85, 85);
+          doc.addImage(currentAnalysisResult.original_target_url, 'JPEG', 14, 70, 85, 85);
 
           doc.text("2. Structural Bone Outline", 111, 66);
-          doc.addImage(imgContourData, 'JPEG', 111, 70, 85, 85);
+          doc.addImage(currentAnalysisResult.target_contour_url, 'JPEG', 111, 70, 85, 85);
 
           doc.text("3. Comparative Discontinuity Heatmap", 14, 168);
-          doc.addImage(imgDiagData, 'JPEG', 14, 172, 85, 85);
+          doc.addImage(currentAnalysisResult.diagnostic_comparison_url, 'JPEG', 14, 172, 85, 85);
 
           doc.save(`OsteoVision_Report_${timestamp}.pdf`);
         } catch (err) {
